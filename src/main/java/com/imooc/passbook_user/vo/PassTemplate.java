@@ -14,22 +14,30 @@ import java.util.Date;
 @AllArgsConstructor
 public class PassTemplate {
 
-    private Integer id;
+    private BaseInfo baseInfo;
 
-    private String title;
+    private Constraint constraint;
 
-    private String summary;
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class BaseInfo {
+        private Integer id;
+        private String title;
+        private String summary;
+        private String desc;
+        private Boolean hasToken;
+        private Integer background;
+    }
 
-    private String desc;
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Constraint {
+        private Long limit;
+        private Date start;
+        private Date end;
+    }
 
-    private Long limit;
-
-    private Boolean hasToken;
-
-    private Integer background;
-
-    private Date start;
-
-    private Date end;
 
 }

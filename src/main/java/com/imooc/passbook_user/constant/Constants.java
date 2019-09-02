@@ -125,7 +125,7 @@ public class Constants {
         public static final String TEMPLATE_ID = "template_id";
 
         /** 评论内容 */
-        public static final String COMMIT = "commit";
+        public static final String COMMENT = "comment";
 
     }
  }
