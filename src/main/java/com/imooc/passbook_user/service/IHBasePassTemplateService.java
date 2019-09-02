@@ -5,7 +5,7 @@ import com.imooc.passbook_user.vo.PassTemplate;
 /**
  * Pass HBase 服务
  */
-public interface IHBasePassService {
+public interface IHBasePassTemplateService {
 
     /**
      * 将PassTemplate 写入HBase

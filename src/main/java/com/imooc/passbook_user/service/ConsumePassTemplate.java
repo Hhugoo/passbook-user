@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 public class ConsumePassTemplate {
 
     @Autowired
-    private IHBasePassService iHBasePassService;
+    private IHBasePassTemplateService iHBasePassTemplateService;
 
     /**
      *
@@ -44,7 +44,7 @@ public class ConsumePassTemplate {
             return;
         }
 
-        log.info("DropPassTemplateToHBase: {}", iHBasePassService.dropPassTemplateToHBase(pt));
+        log.info("DropPassTemplateToHBase: {}", iHBasePassTemplateService.dropPassTemplateToHBase(pt));
     }
 
 }
