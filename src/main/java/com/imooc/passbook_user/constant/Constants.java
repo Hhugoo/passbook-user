@@ -53,6 +53,7 @@ public class Constants {
         /** 基本信息列族 */
         public static final String FAMILY_B = "b";
 
+        /** 投放商家的id */
         public static final String ID = "id";
 
         /** 优惠券的标题 */
