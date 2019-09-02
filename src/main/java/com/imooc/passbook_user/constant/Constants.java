@@ -66,7 +66,7 @@ public class Constants {
         /** 优惠券是否有token */
         public static final String HAS_TOKEN = "has_token";
 
-        public static final String BACKGROUND = "backgroud";
+        public static final String BACKGROUND = "background";
 
         /** 约束信息列族 constraint*/
         public static final String FAMILY_C = "c";
