@@ -1,6 +1,7 @@
 package com.imooc.passbook_user.utils;
 
 import com.imooc.passbook_user.vo.Feedback;
+import com.imooc.passbook_user.vo.GainPassTemplateRequest;
 import com.imooc.passbook_user.vo.PassTemplate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -24,6 +25,19 @@ public class RowKeyGenUtil {
 
         return rowKey;
 
+    }
+
+    /**
+     * 根据提供的领取优惠券请求生成RowKey，只可以在领取优惠券的时候使用
+     * pass RowKey = reversed(userId) + inverse(timestamp) + PassTemplate RowKey
+     * inverse: Long.Max_value - System.currentMill();
+     * @param request
+     * @return
+     */
+    public static String genPassRowKey(GainPassTemplateRequest request) {
+        return new StringBuilder(String.valueOf(request.getUserId())).reverse().toString()
+                + (Long.MAX_VALUE - System.currentTimeMillis())
+                + genPassTemplateRowKey(request.getPassTemplate())
     }
 
     /**
