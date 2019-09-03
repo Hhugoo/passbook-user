@@ -37,7 +37,7 @@ public class RowKeyGenUtil {
     public static String genPassRowKey(GainPassTemplateRequest request) {
         return new StringBuilder(String.valueOf(request.getUserId())).reverse().toString()
                 + (Long.MAX_VALUE - System.currentTimeMillis())
-                + genPassTemplateRowKey(request.getPassTemplate())
+                + genPassTemplateRowKey(request.getPassTemplate());
     }
 
     /**
