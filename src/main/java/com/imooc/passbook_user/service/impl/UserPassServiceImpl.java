@@ -1,17 +1,26 @@
 package com.imooc.passbook_user.service.impl;
 
 import com.imooc.passbook_user.constant.Constants;
+import com.imooc.passbook_user.constant.PassStatus;
 import com.imooc.passbook_user.dao.MerchantsDao;
 import com.imooc.passbook_user.entity.Merchants;
+import com.imooc.passbook_user.mapper.PassRowMapper;
 import com.imooc.passbook_user.service.IUserPassService;
 import com.imooc.passbook_user.vo.Pass;
+import com.imooc.passbook_user.vo.PassInfo;
 import com.imooc.passbook_user.vo.PassTemplate;
+import com.imooc.passbook_user.vo.PassTemplate.BaseInfo;
 import com.imooc.passbook_user.vo.Response;
 import com.spring4all.spring.boot.starter.hbase.api.HbaseTemplate;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.filter.CompareFilter;
+import org.apache.hadoop.hbase.filter.PrefixFilter;
+import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -24,6 +33,7 @@ import java.util.stream.Collectors;
 /**
  * 用户优惠券相关功能实现
  */
+@Slf4j
 public class UserPassServiceImpl implements IUserPassService{
 
     @Autowired
@@ -49,6 +59,62 @@ public class UserPassServiceImpl implements IUserPassService{
     @Override
     public Response userUsePass(Pass pass) {
         return null;
+    }
+
+    /**
+     * 根据优惠券状态获取优惠券信息
+     * @param userId
+     * @param status
+     * @return
+     * @throws Exception
+     */
+    private Response getPassInfoByStatus(Long userId, PassStatus status) throws Exception {
+
+        // 根据userId 构造行键前缀
+        byte[] rowPrefix = Bytes.toBytes(new StringBuilder(String.valueOf(userId)).reverse().toString());
+
+        CompareFilter.CompareOp compareOp =
+                status == PassStatus.ALL ?
+                        CompareFilter.CompareOp.EQUAL : CompareFilter.CompareOp.NOT_EQUAL;
+
+        Scan scan = new Scan();
+        // 行键前缀过滤器，找到特定用户的优惠券
+        scan.setFilter(new PrefixFilter(rowPrefix));
+        // 基于列单元值的过滤器，找到未使用的优惠券
+        if (status != PassStatus.ALL) {
+            scan.setFilter(new SingleColumnValueFilter(
+                    Constants.PassTable.FAMILY_I.getBytes(),
+                    Constants.PassTable.CON_DATE.getBytes(), compareOp,
+                    Bytes.toBytes("-1")
+            ));
+        }
+
+        List<Pass> passes = hbaseTemplate.find(Constants.PassTable.TABLE_NAME, scan, new PassRowMapper());
+        Map<String, PassTemplate> passTemplateMap = buildPassTemplateMap(passes);
+        Map<Integer, Merchants> merchantsMap = buildMerchantsMap(
+                new ArrayList<>(passTemplateMap.values()));
+
+        List<PassInfo> result = new ArrayList<>();
+
+        for (Pass pass : passes) {
+            PassTemplate passTemplate = passTemplateMap.getOrDefault(
+                    pass.getTemplateId(), null
+            );
+            if (null == passTemplate) {
+                log.error("PassTemplate Null : {}", pass.getTemplateId());
+                continue;
+            }
+
+            Merchants merchants = merchantsMap.getOrDefault(passTemplate.getBaseInfo().getId(), null);
+            if (null == merchants) {
+                log.error("Merchants Null : {}", passTemplate.getBaseInfo().getId());
+                continue;
+            }
+
+            result.add(new PassInfo(pass, passTemplate, merchants));
+        }
+
+        return new Response(result);
     }
 
     /**
@@ -91,7 +157,7 @@ public class UserPassServiceImpl implements IUserPassService{
             PassTemplate passTemplate = new PassTemplate();
 
             passTemplate.setBaseInfo(
-                    new PassTemplate.BaseInfo(
+                    new BaseInfo(
                         Bytes.toInt(item.getValue(FAMILY_B, ID)),
                         Bytes.toString(item.getValue(FAMILY_B, TITLE)),
                         Bytes.toString(item.getValue(FAMILY_B, SUMMARY)),
@@ -117,13 +183,17 @@ public class UserPassServiceImpl implements IUserPassService{
 
     /**
      * 通过获取的Passtemplate 对象构造Merchants Map
-     * @param passTemplateBaseInfo {@link PassTemplate.BaseInfo}
+     * @param passTemplates {@link PassTemplate}
      * @return
      */
-    private Map<Integer, Merchants> buildMerchantsMap(List<PassTemplate.BaseInfo> passTemplateBaseInfo) {
+    private Map<Integer, Merchants> buildMerchantsMap(List<PassTemplate> passTemplates) {
 
         Map<Integer, Merchants> merchantsMap = new HashMap<>();
-        List<Integer> merchantsIds = passTemplateBaseInfo.stream().map(
+        List<PassTemplate.BaseInfo> passTemplatebaseInfo = passTemplates.stream().map(
+                PassTemplate::getBaseInfo
+        ).collect(Collectors.toList());
+
+        List<Integer> merchantsIds = passTemplatebaseInfo.stream().map(
                 PassTemplate.BaseInfo::getId
         ).collect(Collectors.toList());
         List<Merchants> merchants = merchantsDao.findByIdIn(merchantsIds);
