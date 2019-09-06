@@ -21,6 +21,7 @@ import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
  * 用户优惠券相关功能实现
  */
 @Slf4j
+@Service
 public class UserPassServiceImpl implements IUserPassService{
 
     @Autowired
