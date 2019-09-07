@@ -1,9 +1,12 @@
 package com.imooc.passbook_user.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.imooc.passbook_user.constant.Constants;
+import com.imooc.passbook_user.mapper.PassTemplateRowMapper;
 import com.imooc.passbook_user.service.IGainPassTemplateService;
 import com.imooc.passbook_user.utils.RowKeyGenUtil;
 import com.imooc.passbook_user.vo.GainPassTemplateRequest;
+import com.imooc.passbook_user.vo.PassTemplate;
 import com.imooc.passbook_user.vo.Response;
 import com.spring4all.spring.boot.starter.hbase.api.HbaseTemplate;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +41,54 @@ public class GainPassTemplateServiceImpl implements IGainPassTemplateService{
 
     @Override
     public Response gainPassTemplate(GainPassTemplateRequest request) throws Exception {
-        return null;
+
+        PassTemplate passTemplate;
+        String passTemplateId = RowKeyGenUtil.genPassTemplateRowKey(request.getPassTemplate());
+
+        try {
+            passTemplate = hbaseTemplate.get(
+                    Constants.PassTemplateTable.TABLE_NAME,
+                    passTemplateId,
+                    new PassTemplateRowMapper()
+            );
+        } catch (Exception e) {
+            log.error("Gain PassTempalte Error: {}", JSON.toJSONString(request.getPassTemplate()));
+            return Response.failure("Gain PassTempalte Error");
+        }
+
+        if (passTemplate.getConstraint().getLimit() <=1 && passTemplate.getConstraint().getLimit() != -1) {
+            log.error("PassTemplate Limit Max:{}", JSON.toJSONString(request.getPassTemplate()));
+            return Response.failure("PassTemplate Limit Max!");
+        }
+
+        Date cur = new Date();
+
+        if (!(cur.getTime() >= passTemplate.getConstraint().getStart().getTime()
+                && cur.getTime() < passTemplate.getConstraint().getEnd().getTime())) {
+            log.error("PassTemplate VaildTime error: {}", JSON.toJSONString(request.getPassTemplate()));
+            return Response.failure("PassTemplate VaildTime Error!");
+        }
+
+        //减去优惠券的limit
+        if (passTemplate.getConstraint().getLimit() != -1) {
+            List<Mutation> datas = new ArrayList<>();
+            byte[] FAMILY_C = Constants.PassTemplateTable.FAMILY_C.getBytes();
+            byte[] LIMIT = Constants.PassTemplateTable.LIMIT.getBytes();
+
+            Put put = new Put(Bytes.toBytes(passTemplateId));
+            put.addColumn(FAMILY_C, LIMIT,
+                    Bytes.toBytes(passTemplate.getConstraint().getLimit() -1));
+            datas.add(put);
+
+            hbaseTemplate.saveOrUpdates(Constants.PassTemplateTable.TABLE_NAME, datas);
+        }
+
+        //将优惠券保存到用户优惠券表
+        if (!addPassForUser(request, passTemplate.getBaseInfo().getId(), passTemplateId)) {
+            return Response.failure("GainPassTemplate Failure");
+        }
+
+        return Response.success();
     }
 
     /**
