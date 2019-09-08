@@ -56,7 +56,7 @@ public class GainPassTemplateServiceImpl implements IGainPassTemplateService{
             return Response.failure("Gain PassTempalte Error");
         }
 
-        if (passTemplate.getConstraint().getLimit() <=1 && passTemplate.getConstraint().getLimit() != -1) {
+        if (passTemplate.getConstraint().getLimit() <1 && passTemplate.getConstraint().getLimit() != -1) {
             log.error("PassTemplate Limit Max:{}", JSON.toJSONString(request.getPassTemplate()));
             return Response.failure("PassTemplate Limit Max!");
         }
