@@ -6,6 +6,8 @@ import com.imooc.passbook_user.service.IFeedbackService;
 import com.imooc.passbook_user.service.IGainPassTemplateService;
 import com.imooc.passbook_user.service.IInventoryService;
 import com.imooc.passbook_user.service.IUserPassService;
+import com.imooc.passbook_user.vo.Feedback;
+import com.imooc.passbook_user.vo.GainPassTemplateRequest;
 import com.imooc.passbook_user.vo.Pass;
 import com.imooc.passbook_user.vo.Response;
 import lombok.extern.slf4j.Slf4j;
@@ -87,7 +89,7 @@ public class PassbookController {
      */
     @ResponseBody
     @PostMapping("/userusepass")
-    Response userUsePass(Pass pass) {
+    Response userUsePass(@RequestBody Pass pass) {
         LogGenerator.genLog(
                 httpServletRequest,
                 pass.getUserId(),
@@ -115,6 +117,72 @@ public class PassbookController {
         );
 
         return iInventoryService.getInventoryInfo(userId);
+    }
+
+    /**
+     * 用户领取优惠券
+     * @param request
+     * @return
+     * @throws Exception
+     */
+    @ResponseBody
+    @PostMapping("/gainpasstemplate")
+    Response gainPassTemplate(@RequestBody GainPassTemplateRequest request) throws Exception {
+        LogGenerator.genLog(
+                httpServletRequest,
+                request.getUserId(),
+                LogConstants.ActionName.GAIN_PASS_TEMPLATE,
+                request
+        );
+
+        return iGainPassTemplateService.gainPassTemplate(request);
+    }
+
+    /**
+     * 用户创建评论
+     * @param feedback
+     * @return
+     */
+    @ResponseBody
+    @PostMapping("/createfeedback")
+    Response createFeedback(@RequestBody Feedback feedback) {
+        LogGenerator.genLog(
+                httpServletRequest,
+                feedback.getUserId(),
+                LogConstants.ActionName.CREATE_FEEDBACK,
+                feedback
+        );
+
+        return iFeedbackService.createFeedback(feedback);
+    }
+
+    /**
+     * 用户获取评论信息
+     * @param userId
+     * @return
+     */
+    @ResponseBody
+    @GetMapping("/getfeedback")
+    Response getFeedback(Long userId) {
+        LogGenerator.genLog(
+                httpServletRequest,
+                userId,
+                LogConstants.ActionName.GET_FEEDBACK,
+                null
+        );
+
+        return iFeedbackService.getFeedback(userId);
+    }
+
+    /**
+     * 异常演示接口
+     * @return
+     * @throws Exception
+     */
+    @ResponseBody
+    @GetMapping("/exception")
+    Response exception() throws Exception {
+        throw new Exception("Welcome to imooc!");
     }
 
 }
